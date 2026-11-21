@@ -50,9 +50,14 @@ def forecast_demand(history, alpha=0.3):
 
 
 def demand_intensity(waiting_passengers, taxis_present, seats=15):
-    """Heat-map value = passengers waiting / seats on hand. >1 means under-served."""
+    """Heat-map value = passengers waiting / seats on hand. >1 means under-served.
+
+    No taxis and nobody waiting = 0 (no demand). No taxis but people waiting = infinite.
+    """
     capacity = taxis_present * seats
-    return round(waiting_passengers / capacity, 2) if capacity else float("inf")
+    if not capacity:
+        return float("inf") if waiting_passengers else 0.0
+    return round(waiting_passengers / capacity, 2)
 
 
 def demand_level(intensity):
@@ -83,3 +88,10 @@ def deploy_taxis(stops, spare_taxis, seats=15):
         plan[worst] += 1
         shortfall[worst] = max(shortfall[worst] - seats, 0)
     return plan
+
+
+def heat_map_entry(waiting_passengers, taxis_present, seats=15):
+    """Intensity and level for one stop, JSON-safe (no taxis + people waiting -> None)."""
+    intensity = demand_intensity(waiting_passengers, taxis_present, seats)
+    level = demand_level(intensity)
+    return (None if intensity == float("inf") else intensity), level

@@ -1,4 +1,19 @@
+# Python
 __pycache__/
-.venv/
+*.py[cod]
+*$py.class
+*.so
+.Python
 venv/
-.pytest_cache/
+env/
+.env
+*.log
+*.db
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
