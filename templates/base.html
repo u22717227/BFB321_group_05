@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Eyabantu{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <a href="{{ url_for('pages.index') }}" class="brand"><span class="logo">E</span>Eyabantu</a>
+      <span class="tagline">Taxi information for the people</span>
+      <nav>
+        <a href="{{ url_for('pages.stops') }}">Live stops</a>
+        <a href="{{ url_for('pages.demand') }}">Demand</a>
+        <a href="{{ url_for('pages.report') }}">Report</a>
+        {% if session.get('user_id') %}
+          <a href="{{ url_for('pages.logout') }}">Logout ({{ session.get('name', 'User') }})</a>
+        {% else %}
+          <a href="{{ url_for('pages.login') }}">Login</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="wrap">
+        {% for category, message in messages %}
+          <p class="flash {{ category }}">{{ message }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</body>
+</html>

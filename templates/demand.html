@@ -1,70 +1,89 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Demand | Eyabantu</title>
-  <link rel="stylesheet" href="../static/style.css">
-</head>
-<body>
-  <header>
-    <div class="wrap">
-      <a href="index.html" class="brand"><span class="logo">E</span>Eyabantu</a>
-      <span class="tagline">Taxi information for the people</span>
-    </div>
-  </header>
+{% extends "base.html" %}
+{% block title %}Demand Heat Map | Eyabantu{% endblock %}
+{% block content %}
   <section class="page-banner">
     <div class="wrap">
       <h1>Demand heat map</h1>
-      <p>For drivers and associations: where passengers are waiting and where to send spare taxis.</p>
+      <p>Where passenger demand is highest and how many spare taxis to send.</p>
     </div>
   </section>
-
   <main class="wrap">
+    <section class="card">
+      <h2>Driver check-in</h2>
+      <form method="POST" action="{{ url_for('pages.taxi_checkin_form') }}">
+        <label for="checkin_stop">Stop</label>
+        <select id="checkin_stop" name="stop_id" required>
+          {% for s in stops %}
+          <option value="{{ s.stop_id }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+        <label for="seats">Seats available</label>
+        <input id="seats" name="seats_available" type="number" min="0" max="15" value="15" required>
+        <button type="submit">Check in</button>
+      </form>
+      {% if active_taxis %}
+      <h3>Active taxis</h3>
+      <table>
+        <thead><tr><th>Stop</th><th>Seats</th><th></th></tr></thead>
+        <tbody>
+          {% for taxi in active_taxis %}
+          <tr>
+            <td>{{ taxi.stop_name }}</td>
+            <td>{{ taxi.seats_available }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('pages.taxi_checkout_form', position_id=taxi.position_id) }}">
+                <button type="submit">Check out</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+    </section>
 
     <section class="card">
-      <h2>Current demand</h2>
-      <ul class="legend" aria-label="Colour key">
-        <li><span class="swatch very-high"></span>Very high</li>
-        <li><span class="swatch high"></span>High</li>
-        <li><span class="swatch moderate"></span>Moderate</li>
-        <li><span class="swatch low"></span>Low</li>
+      <h2>Report waiting passengers</h2>
+      <form method="POST" action="{{ url_for('pages.demand_report_form') }}">
+        <label for="stop_id">Stop</label>
+        <select id="stop_id" name="stop_id" required>
+          {% for s in stops %}
+          <option value="{{ s.stop_id }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+        <label for="waiting">Waiting passengers</label>
+        <input id="waiting" name="waiting_passengers" type="number" min="0" max="1000" required>
+        <button type="submit">Report demand</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Current demand by stop</h2>
+      <table>
+        <thead><tr><th>Stop</th><th>Waiting</th><th>Taxis present</th><th>Intensity</th><th>Level</th></tr></thead>
+        <tbody>
+          {% for item in heat_map %}
+          <tr>
+            <td>{{ item.stop }}</td>
+            <td>{{ item.waiting }}</td>
+            <td>{{ item.taxis }}</td>
+            <td>{{ item.intensity if item.intensity is not none else 'No taxis' }}</td>
+            <td><span class="badge {% if item.level == 'Very high' %}bad{% elif item.level == 'High' %}warn{% else %}ok{% endif %}">{{ item.level }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Suggested deployment (20 spare taxis)</h2>
+      <ul>
+        {% for stop, count in deployment.items() %}
+          {% if count > 0 %}
+          <li>Send {{ count }} taxi(s) to {{ stop }}</li>
+          {% endif %}
+        {% endfor %}
       </ul>
-      <table>
-        <thead><tr><th>Stop</th><th class="desktop-only">Route</th><th>Passengers waiting</th><th class="desktop-only">Taxis present</th><th>Demand</th><th>Send taxis</th></tr></thead>
-        <tbody>
-          <tr class="very-high"><td>Mamelodi Rank</td><td class="desktop-only">Mamelodi - Pretoria CBD</td><td>210</td><td class="desktop-only">4</td><td><b>Very high</b></td><td>10</td></tr>
-          <tr class="high"><td>Hammanskraal Rank</td><td class="desktop-only">Hammanskraal - Pretoria CBD</td><td>150</td><td class="desktop-only">4</td><td><b>High</b></td><td>5</td></tr>
-          <tr class="high"><td>Denneboom</td><td class="desktop-only">Mamelodi - Pretoria CBD</td><td>95</td><td class="desktop-only">3</td><td><b>High</b></td><td>3</td></tr>
-          <tr class="high"><td>Soshanguve Rank</td><td class="desktop-only">Soshanguve - Pretoria CBD</td><td>130</td><td class="desktop-only">6</td><td><b>High</b></td><td>2</td></tr>
-          <tr class="moderate"><td>Mabopane Station</td><td class="desktop-only">Mabopane - Pretoria CBD</td><td>70</td><td class="desktop-only">5</td><td><b>Moderate</b></td><td>0</td></tr>
-          <tr class="moderate"><td>Atteridgeville Rank</td><td class="desktop-only">Atteridgeville - Pretoria CBD</td><td>60</td><td class="desktop-only">5</td><td><b>Moderate</b></td><td>0</td></tr>
-          <tr class="low"><td>Silverton</td><td class="desktop-only">Silverton - Pretoria CBD</td><td>25</td><td class="desktop-only">3</td><td><b>Low</b></td><td>0</td></tr>
-        </tbody>
-      </table>
     </section>
-
-    <section class="card">
-      <h2>Current reports on stops</h2>
-      <table>
-        <thead><tr><th>#</th><th>Stop</th><th class="desktop-only">Route</th><th>Report type</th><th>Safety rating</th><th>Time</th></tr></thead>
-        <tbody>
-          <tr><td>1</td><td>Mamelodi Rank</td><td class="desktop-only">Mamelodi - Pretoria CBD</td><td>Taxi stops here</td><td>4 / 5</td><td>07:52</td></tr>
-          <tr><td>2</td><td>Hammanskraal Rank</td><td class="desktop-only">Hammanskraal - Pretoria CBD</td><td>I was picked up safely</td><td>5 / 5</td><td>07:40</td></tr>
-          <tr><td>3</td><td>Soshanguve Rank</td><td class="desktop-only">Soshanguve - Pretoria CBD</td><td>I felt safe while waiting at this stop</td><td>4 / 5</td><td>07:31</td></tr>
-          <tr><td>4</td><td>Atteridgeville Rank</td><td class="desktop-only">Atteridgeville - Pretoria CBD</td><td>Taxi stops here</td><td>2 / 5</td><td>07:18</td></tr>
-          <tr><td>5</td><td>Denneboom</td><td class="desktop-only">Mamelodi - Pretoria CBD</td><td>I was picked up safely</td><td>3 / 5</td><td>07:05</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="card kpis">
-      <div><span>20</span>Spare taxis deployed</div>
-      <div><span>740</span>Passengers waiting now</div>
-      <div><span>776</span>Forecast passengers next hour</div>
-    </section>
-
-    <a href="index.html" class="btn back">&larr; Back to welcome page</a>
   </main>
-</body>
-</html>
+{% endblock %}

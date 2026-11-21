@@ -1,20 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Reloads the page every 60 seconds so the tables stay current (no JavaScript needed) -->
-  <meta http-equiv="refresh" content="60">
-  <title>Live Stops | Eyabantu</title>
-  <link rel="stylesheet" href="../static/style.css">
-</head>
-<body>
-  <header>
-    <div class="wrap">
-      <a href="index.html" class="brand"><span class="logo">E</span>Eyabantu</a>
-      <span class="tagline">Taxi information for the people</span>
-    </div>
-  </header>
+{% extends "base.html" %}
+{% block title %}Live Stops | Eyabantu{% endblock %}
+{% block content %}
   <section class="page-banner">
     <div class="wrap">
       <h1>Live stops</h1>
@@ -23,19 +9,21 @@
   </section>
 
   <main class="wrap">
-
     <section class="card">
       <h2>Next taxis</h2>
       <table>
-        <thead><tr><th>Stop</th><th class="desktop-only">Route</th><th>ETA</th><th>Confidence</th></tr></thead>
+        <thead><tr><th>Stop</th><th>Route</th><th>ETA</th><th>Confidence</th></tr></thead>
         <tbody>
-          <tr><td>Mamelodi Rank</td><td class="desktop-only">Mamelodi - Pretoria CBD</td><td>4 min</td><td><span class="badge ok">Verified 1.0</span></td></tr>
-          <tr><td>Denneboom</td><td class="desktop-only">Mamelodi - Pretoria CBD</td><td>16.5 min</td><td><span class="badge ok">Verified 0.8</span></td></tr>
-          <tr><td>Silverton</td><td class="desktop-only">Silverton - Pretoria CBD</td><td>No GPS</td><td><span class="badge warn">Unverified 0.1</span></td></tr>
-          <tr><td>Soshanguve Rank</td><td class="desktop-only">Soshanguve - Pretoria CBD</td><td>9.5 min</td><td><span class="badge ok">Verified 0.9</span></td></tr>
-          <tr><td>Atteridgeville Rank</td><td class="desktop-only">Atteridgeville - Pretoria CBD</td><td>7.5 min</td><td><span class="badge warn">Unverified 0.2</span></td></tr>
-          <tr><td>Mabopane Station</td><td class="desktop-only">Mabopane - Pretoria CBD</td><td>13 min</td><td><span class="badge ok">Verified 0.9</span></td></tr>
-          <tr><td>Hammanskraal Rank</td><td class="desktop-only">Hammanskraal - Pretoria CBD</td><td>19 min</td><td><span class="badge ok">Verified 1.0</span></td></tr>
+          {% for stop in live_stops %}
+          <tr>
+            <td>{{ stop.name }}</td>
+            <td>{{ stop.route }}</td>
+            <td>{{ stop.eta }}</td>
+            <td><span class="badge {% if stop.verified %}ok{% else %}warn{% endif %}">
+              {% if stop.verified %}Verified{% else %}Unverified{% endif %} {{ stop.confidence }}
+            </span></td>
+          </tr>
+          {% endfor %}
         </tbody>
       </table>
     </section>
@@ -43,64 +31,43 @@
     <section class="card">
       <h2>Current problems at taxi ranks</h2>
       <table>
-        <caption>Most reported first. The page refreshes every 60 seconds.</caption>
-        <thead><tr><th>#</th><th>Stop</th><th>Problem</th><th>Reports</th><th>Last reported</th></tr></thead>
+        <caption>Newest reports first. Taxi associations can mark a problem as resolved.</caption>
+        <thead><tr><th>#</th><th>Stop</th><th>Problem</th><th>Last reported</th><th></th></tr></thead>
         <tbody>
-          <tr><td>1</td><td>Mamelodi Rank</td><td>Taxi is late (ETA wrong)</td><td>3</td><td>07:45</td></tr>
-          <tr><td>2</td><td>Atteridgeville Rank</td><td>Stop feels unsafe</td><td>2</td><td>07:20</td></tr>
-          <tr><td>3</td><td>Hammanskraal Rank</td><td>Taxi is late (ETA wrong)</td><td>2</td><td>07:10</td></tr>
-          <tr><td>4</td><td>Silverton</td><td>Stop has moved</td><td>1</td><td>06:55</td></tr>
+          {% for problem in problems %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ problem.stop_name }}</td>
+            <td>{{ problem.problem_type }}</td>
+            <td>{{ problem.reported_at.strftime('%d %b %H:%M') if problem.reported_at else 'N/A' }}</td>
+            <td>
+              <form method="POST" action="{{ url_for('pages.resolve_problem_form', problem_id=problem.problem_id) }}">
+                <button type="submit">Resolve</button>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5">No open problems reported.</td></tr>
+          {% endfor %}
         </tbody>
       </table>
-      <p><a href="#report-problem" class="btn">Report a problem</a></p>
     </section>
 
-    <section class="card kpis">
-      <div><span>10 min</span>Expected wait (20 min headway)</div>
-      <div><span>80%</span>Occupancy percentage (12 of 15 seats)</div>
-      <div><span>5 / 7</span>Stops verified</div>
+    <section class="card">
+      <h2>Report a problem</h2>
+      <form method="POST" action="{{ url_for('pages.problem_report_form') }}">
+        <label for="stop_id">Stop</label>
+        <select id="stop_id" name="stop_id" required>
+          {% for s in stops %}
+          <option value="{{ s.stop_id }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+        <label for="problem_type">Problem</label>
+        <input id="problem_type" name="problem_type" required maxlength="255">
+        <label for="description">Details</label>
+        <input id="description" name="description" maxlength="500">
+        <button type="submit">Report problem</button>
+      </form>
     </section>
-
-    <a href="index.html" class="btn back">&larr; Back to welcome page</a>
   </main>
-
-  <!-- Pop-up in pure CSS: shown when the link above adds #report-problem to the URL -->
-  <div class="modal" id="report-problem" role="dialog" aria-labelledby="problemTitle">
-    <form class="modal-box" action="#">
-      <div class="modal-head">
-        <h2 id="problemTitle">Report a problem</h2>
-        <a href="#" class="close" aria-label="Close">&times;</a>
-      </div>
-      <label for="p-stop">Stop</label>
-      <select id="p-stop" name="stop" required aria-describedby="p-stop-err">
-        <option value="">Choose a stop...</option>
-        <option>Mamelodi Rank</option>
-        <option>Denneboom</option>
-        <option>Silverton</option>
-        <option>Soshanguve Rank</option>
-        <option>Atteridgeville Rank</option>
-        <option>Mabopane Station</option>
-        <option>Hammanskraal Rank</option>
-      </select>
-      <span class="error" id="p-stop-err">Please choose a stop.</span>
-
-      <label for="p-type">Problem</label>
-      <select id="p-type" name="problem" required aria-describedby="p-type-err">
-        <option value="">Choose a problem...</option>
-        <option>Taxi is late (ETA wrong)</option>
-        <option>Stop has moved</option>
-        <option>Stop feels unsafe</option>
-      </select>
-      <span class="error" id="p-type-err">Please choose a problem type.</span>
-
-      <label for="p-note">Details (optional)</label>
-      <textarea id="p-note" name="note" rows="2" maxlength="200"></textarea>
-
-      <div class="modal-actions">
-        <a href="#" class="btn secondary">Cancel</a>
-        <button type="submit">Send report</button>
-      </div>
-    </form>
-  </div>
-</body>
-</html>
+{% endblock %}

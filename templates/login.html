@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Login | Eyabantu{% endblock %}
+{% block content %}
+  <main class="wrap">
+    <section class="card">
+      <h2>Login</h2>
+      <form method="POST">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+        <button type="submit">Login</button>
+      </form>
+      <p>Demo accounts (password <code>demo123</code>): commuter@eyabantu.co.za | driver@eyabantu.co.za | assoc@eyabantu.co.za</p>
+    </section>
+  </main>
+{% endblock %}
