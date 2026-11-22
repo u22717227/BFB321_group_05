@@ -1,5 +1,4 @@
 -- Eyabantu Taxi Program - MySQL Schema
--- Compatible with Aiven MySQL or local MySQL
 
 -- Reset command: running this file drops and recreates the database.
 DROP DATABASE IF EXISTS eyabantu;
