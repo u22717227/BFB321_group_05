@@ -1,226 +1,268 @@
-# Eyabantu Taxi Program - BFB 321 Group 05
+# Eyabantu Taxi Program
 
-## Project Description
-Eyabantu ("for the people") is a mobile-first web application that brings real-time visibility to South Africa's minibus taxi industry, which carries 65-75% of the country's public transport users.
+**BFB 321 Group 05**
+Real-time visibility for South Africa's minibus taxi industry: live stops with ETA and confidence, a demand heat map with a taxi deployment plan, problem reports, and crowdsourced stop verification.
 
-- **Commuters** can see where taxis stop on 6 pilot routes into Pretoria CBD, when the next taxi will arrive, and which problems have been reported at taxi ranks.
-- **Drivers and taxi associations** can see where passenger demand is highest and how many spare taxis to send to each location.
-- **Everyone** can report stops, safe pickups, and how safe they felt, which is how stops get verified.
+## Tech stack
+- **Frontend:** HTML and CSS, rendered by Flask with Jinja2 templates
+- **Backend:** Python 3 and Flask, with a REST API blueprint returning JSON
+- **Database:** MySQL 8 (accessed with PyMySQL; all queries are parameterised)
+- **Supply chain model:** `supply_chain_model.py` (ETA, demand intensity, deployment, confidence, forecast, occupancy)
+- **Testing:** pytest
 
-Stops are verified by combining driver GPS, commuter reports, and existing route data. The website includes an SOS button that calls the police (10111) for commuters who feel unsafe.
+## Setup (local MySQL)
 
-*BFB 321 Supply Chain Web Application - Semester Project (Step 1: Frontend Build, Step 2: Supply Chain Model). Built with HTML, CSS, and Python only.*
+You need Python 3.10+ and MySQL Server 8 running locally.
 
-## Group 05 Members
-| **Name**          | **Student Number** |
-|-------------------|--------------------|
-| Danie Smit        | u23596717          |
-| Harley Dalmeida   | u22717227          |
-| Jaco Grobbelaar   | u23535173          |
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/u22717227/BFB321_group_05.git
+   cd BFB321_group_05
+   ```
+   The folder name after `cd` must match the repository name on GitHub.
 
-## Installation and Setup
+2. **Create a virtual environment and install packages**
+   ```bash
+   python -m venv venv
+   # Windows:
+   venv\Scripts\activate
+   # Mac/Linux:
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
 
-### What you need
-- **Python 3.8 or newer**: download from python.org (on Windows, tick "Add Python to PATH" during install)
-- **A web browser**: Chrome, Edge, Firefox, or Safari
-- **VS Code** (recommended)
-- **Git** (only needed to clone from GitHub)
+3. **Create your `.env` file**
+   ```bash
+   copy .env.example .env     # Windows
+   cp .env.example .env       # Mac/Linux
+   ```
+   Open `.env` and set `DB_USER` and `DB_PASSWORD` to your MySQL login (usually `root` and the password you use in MySQL Workbench).
 
-### Step 1: Get the project
-Either clone it from GitHub:
-```
-git clone [https://github.com/u22717227/BFB321_Group_05_Semester-Project.git](https://github.com/u22717227/BFB321_Group_05_Semester-Project.git)
-cd BFB321_Group_05_Semester-Project
-```
-or download the zip, **right-click it and choose "Extract All"**, and open the extracted folder.
+4. **Create the database and load the sample data (one command)**
+   ```bash
+   mysql -u root -p -e "source schema.sql; source seed.sql"
+   ```
+   This command works in PowerShell, Command Prompt, Mac and Linux. Alternatively, open `schema.sql` and then `seed.sql` in MySQL Workbench and run each with the lightning-bolt button.
 
-> **Important:** Always extract the whole zip first. Opening a page straight from inside the zip, or copying only the HTML files, displays the page without its colours and photo because the `static` folder (style.css and taxis.jpg) must sit next to the `templates` folder.
+5. **Run the app**
+   ```bash
+   python app.py
+   # or: flask --app app run
+   ```
+   Open http://127.0.0.1:5000
 
-### Step 2: Open it in VS Code
-Go to **File > Open Folder** and choose the project folder (the one containing `README.md`, `templates`, and `static`).
+### Demo accounts
+All three accounts use the password `demo123`.
 
-### Step 3: Set up Python and install the test package
-Open a terminal in VS Code (**Terminal > New Terminal**) and run:
+| Email | Role | Can do |
+|-------|------|--------|
+| `commuter@eyabantu.co.za` | Commuter | View stops and demand, report demand, problems and stops |
+| `driver@eyabantu.co.za` | Driver | Everything a commuter can, plus taxi check-in and check-out |
+| `assoc@eyabantu.co.za` | Taxi association | Everything a driver can, plus resolve problems |
 
-**Windows**
-```
-py -m venv .venv
-.venv\Scripts\activate
-py -m pip install -r requirements.txt
-```
+## Pages
 
-**Ubuntu / Linux / Mac**
-```
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+| Page | URL | What it does | Login needed |
+|------|-----|--------------|--------------|
+| Home | `/` | Live KPI dashboard and links to each user type's pages | No |
+| Live stops | `/stops` | Every stop with ETA, confidence (Verified / Unverified), safety rating, and open problems | No |
+| Demand | `/demand` | Demand heat map (intensity and level per stop) and the taxi deployment plan | No |
+| Report a stop | `/report` | Confirm a stop, a safe pickup, or rate safety | No |
+| Login / Logout | `/login`, `/logout` | Sign in with a demo account | — |
 
-### Step 4: Run the supply chain model tests
-```
-py -m pytest            # Windows
-python3 -m pytest       # Ubuntu / Linux / Mac
-```
-All 7 tests should pass.
+### Form actions (HTML form posts)
+Each form saves to MySQL, redirects back to the page, and shows a green or red message.
 
-### Step 5: Run the model demo
-```
-py run_eyabantu_demo.py         # Windows
-python3 run_eyabantu_demo.py    # Ubuntu / Linux / Mac
-```
-This prints the ETAs, confidence scores, demand intensity, and taxi deployment shown on the website (including the 740 passengers waiting now and 776 forecast passengers for the next hour).
+| Action | Route | Login needed |
+|--------|-------|--------------|
+| Report waiting passengers | `POST /demand/report` | No |
+| Report a problem | `POST /problems/report` | No |
+| Resolve a problem | `POST /problems/<id>/resolve` | Association |
+| Taxi check-in | `POST /taxis/checkin` | Driver or association |
+| Taxi check-out | `POST /taxis/<id>/checkout` | Driver or association |
+| Submit a stop report | `POST /report` | No |
 
-### Step 6: Open the website
-Double-click **`index.html` in the main project folder**. It forwards to the welcome page (`templates/index.html`). From there, use the buttons in the blocks to reach Live Stops, Demand, and Report a Stop, and use the "Back to welcome page" button to return.
+### End-to-end test checklist
+1. Home page shows 8 KPIs (7 stops and 14.3% verified with the seed data).
+2. Demand: report waiting passengers. The heat map updates.
+3. Log in as `assoc@eyabantu.co.za`.
+4. Live stops: resolve the open problem, then report a new one.
+5. Demand: check a taxi in, then check it out.
+6. Report a stop: submit the form.
 
-No internet connection or extra installation is needed for the website.
+To reset the data, run the command in step 4 of the setup again.
 
-## Team Contributions
+## Home-page KPIs
 
-### Danie Smit (u23596717)
-- Built the supply chain model with documented formulas (supply_chain_model.py)
-- Wrote the unit tests checked against hand calculations (test_supply_chain_model.py)
-- Added the model demo script (run_eyabantu_demo.py)
+| KPI | How it is calculated |
+|-----|----------------------|
+| Taxi stops | Number of rows in `stops` |
+| Stops verified (%) | Stops with confidence ≥ 0.5, divided by all stops. Confidence = (stop confirmations + 2 × active taxis) ÷ 10, capped at 1, and capped at 0.5 below 3 pieces of evidence |
+| Open problems | Problem reports with status `open` |
+| Active taxis | Taxi check-ins with `is_active` = true |
+| Under-served stops | Stops where demand intensity > 1. Intensity = latest waiting passengers ÷ (active taxis × 15 seats) |
+| Average waiting passengers | Mean of the latest waiting count at each stop |
+| Forecast next demand | Exponential smoothing (α = 0.3) over the 8 most recent demand reports, oldest to newest |
+| Average taxi occupancy | Mean of (15 − seats available) ÷ 15 over active taxis |
 
-### Harley Dalmeida (u22717227)
-- Built the commuter Live Stops page with the ETA table, confidence badges, and KPI tiles (stops.html)
-- Added the "Report a problem" pop-up and the "Current problems at taxi ranks" table (stops.html)
-- Built the driver and association Demand heat map page (demand.html)
+Demand levels on the heat map: above 3 = Very high, 1.1–3 = High, 0.8–1.1 = Moderate, below 0.8 = Low. A stop with people waiting and no taxis is Very high; a stop with nobody waiting is Low.
 
-### Jaco Grobbelaar (u23535173)
-- Built the welcome page: hero section with taxi photo, stats band, SOS button, user blocks, and how-it-works section (index.html)
-- Built the Report a Stop form with validation and error messages (report.html)
-- Created the shared stylesheet: top bar, buttons, cards, tables, badges, KPI tiles, form errors, and pop-up (style.css)
-- Added README.md, requirements.txt, and .gitignore
+## REST API endpoints
 
-## Project Purpose
+All endpoints are under `/api` and return JSON.
 
-The minibus taxi industry carries 65% to 75% of South Africa's public transport users, accounting for about 15 million trips a day across roughly 200 000 to 283 000 taxis. The industry generates around R90 billion a year and employs about 300 000 drivers and 100 000 marshals. It operates as an informal logistics network that moves commuters from residential areas to work, economic, and educational destinations.
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/stops?route_id=&page=&size=` | List stops (paginated, optional route filter; `size` max 50) |
+| GET | `/api/stops/<id>` | Single stop with ETA and confidence |
+| POST | `/api/stops` | Create a stop (`name` required; `route_id`, `distance_to_cbd_km`, `latitude`, `longitude` optional) |
+| PATCH | `/api/stops/<id>` | Update a stop's name or distance to CBD |
+| GET | `/api/demand-reports?stop_id=&page=&size=` | List demand reports, newest first (paginated, optional stop filter) |
+| GET | `/api/demand-reports/<id>` | Single demand report |
+| POST | `/api/demand-reports` | Report waiting passengers |
+| GET | `/api/heatmap` | Heat-map data with intensity and level per stop |
+| GET | `/api/taxi-positions?active=&stop_id=` | List taxi check-ins (active only unless `active=false`) |
+| GET | `/api/taxi-positions/<id>` | Single taxi check-in |
+| POST | `/api/taxi-positions` | Driver check-in |
+| PATCH | `/api/taxi-positions/<id>` | Check a taxi out or back in (`{"is_active": false}`) |
+| GET | `/api/problems?status=open&page=&size=` | List problems (paginated, filter by `open` or `resolved`) |
+| GET | `/api/problems/<id>` | Single problem |
+| POST | `/api/problems` | Report a problem |
+| PATCH | `/api/problems/<id>` | Resolve or reopen a problem |
 
-Despite its size, the industry is unscheduled. Taxis leave only when full, there are no published routes or timetables, and vehicles are not tracked. Commuters wait long and unpredictable times at ranks that can feel unsafe, while drivers compete for the same passengers in busy areas and struggle to find customers during off-peak hours.
+### Example requests and responses
 
-Eyabantu aims to improve customer fulfilment and fleet utilisation by sharing real-time information between commuters, drivers, and taxi associations. It builds on existing tools such as TeksiMap and WhereIsMyTransport instead of replacing them.
+```json
+POST /api/stops
+{"name": "Hatfield", "route_id": 1, "distance_to_cbd_km": 4.2}
 
-### Impact Areas
-- **Social:** Shorter waiting times and safer, more predictable waiting conditions at ranks and stops
-- **Economic:** Better seat occupancy and steadier driver income, especially during off-peak hours
-- **Operational:** Route and demand data that associations and municipalities can use for fleet planning
-
-### Pilot Area
-The demo data covers 6 Tshwane routes into Pretoria CBD:
-
-| Route | Stops |
-|---|---|
-| Mamelodi - Pretoria CBD | Mamelodi Rank, Denneboom |
-| Silverton - Pretoria CBD | Silverton |
-| Soshanguve - Pretoria CBD | Soshanguve Rank |
-| Atteridgeville - Pretoria CBD | Atteridgeville Rank |
-| Mabopane - Pretoria CBD | Mabopane Station |
-| Hammanskraal - Pretoria CBD | Hammanskraal Rank |
-
-Baseline waiting time, headway, occupancy percentage, and passenger demand will be measured on these routes before comparing them against Eyabantu.
-
----
-
-## Features
-
-### Welcome Page (index.html)
-- **Sticky header**: Displays the Eyabantu logo on every page; clicking it returns to the welcome page
-- **Hero section**: Displays "Sawubona! Ride smarter with Eyabantu" next to a framed photo of minibus taxis
-- **Stats band**: Yellow banner showing key figures from the proposal (15 million daily trips, 65-75% of public transport users, 6 pilot routes, and 7 taxi stops)
-- **SOS block**: Red "Call Police 10111" button that dials directly from a phone
-- **User selection blocks**: Three blocks with icons ("How will you use Eyabantu?"), each with its own button (View live stops, View demand, Report a stop)
-- **How it works**: Three steps showing how commuters report, drivers confirm, and everyone benefits
-- **Pilot routes**: Lists the 6 routes and their stops (the Mamelodi route covers Mamelodi Rank and Denneboom)
-
-### Commuter Features (stops.html)
-- **Live Stops table**: Displays the stop, route, ETA, and confidence badge per stop
-- **Verified / Unverified badges**: Stops only show as verified once enough reports agree
-- **KPI tiles**: Displays expected waiting time, occupancy percentage, and number of verified stops
-- **Current problems at taxi ranks**: Numbered table of reported problems per stop, sorted with the most reported first. The page refreshes every 60 seconds using an HTML meta refresh without JavaScript
-- **Report a problem (pop-up)**: Allows commuters to report a late taxi, a moved stop, or an unsafe stop from the same page using pure CSS (`:target`) without JavaScript
-
-### Driver and Association Features (demand.html)
-- **Demand heat map**: Shows passengers waiting, taxis present, and the demand level per stop in plain categories (Very high, High, Moderate, or Low)
-- **Colour code**: Includes a key above the table (Very high = dark red, High = light red, Moderate = light orange, Low = light green)
-- **Deployment advice**: Shows how many of the 20 spare taxis to send to each stop, sorted from the largest seat shortfall to the smallest
-- **Current reports on stops**: Numbered table of the latest submissions from the Report a Stop form (stop, route, report type, safety rating, and time)
-- **Totals**: Shows passengers waiting now (740) and forecast passengers for the next hour (776)
-
-### Reporting Features (report.html)
-- **Report a stop or pickup**: Includes a stop dropdown, route dropdown (6 routes), report type, and a 1-5 safety rating
-- **Report types**: "Taxi stops here", "I was picked up safely", and "I felt safe while waiting at this stop"
-- **Form validation**: Checks required fields, minimum text length, and rating ranges
-- **Error messages**: Displays a red message under each field explaining what needs to be fixed
-
-### Frontend Design
-- **HTML and CSS only**: Uses no JavaScript and no external libraries, allowing the pages to work offline
-- **Website layout**: Uses a sticky header, full-width sections, and a yellow banner at the top of each page
-- **Navigation**: Includes a "Back to welcome page" button at the bottom of every page
-- **Taxi colour theme**: Applies taxi yellow and charcoal across all buttons and highlights
-- **Responsive layout**: Adapts to mobile screens by stacking the hero image under the text, enabling horizontal scrolling on tables, and stacking blocks and KPI tiles
-- **Accessibility**: Includes labels on every input, table captions and headers, and alt text on the photo
-- **Reusable components**: Shares a single stylesheet for the top bar, buttons, cards, tables, badges, and KPI tiles across all pages
-- **Consistent typography and spacing**: Uses one font family and a 16px spacing scale
-
-### Supply Chain Model (supply_chain_model.py)
-A standalone Python module with no Flask or database dependencies. Each function includes a docstring explaining its formula and assumptions.
-
-| Function | Formula | Feedback addressed |
-|---|---|---|
-| `eta_minutes()` | ETA = d / v x 60 + stops ahead x 1.5 min dwell | How ETA is calculated |
-| `expected_wait()` | Average wait = headway / 2 | Passenger waiting time KPI |
-| `occupancy_percentage()` | Passengers / seats (15) x 100 | Occupancy KPI |
-| `confidence_score()` | (pins + 2 x GPS) / 10, capped at 0.5 if under 3 reports | Low participation, wrong pins, missing GPS |
-| `forecast_demand()` | Exponential smoothing: F = a x A + (1 - a) x F | Replaces MPS with a passenger-demand method |
-| `demand_intensity()` | Passengers waiting / seats present (above 1 = under-served) | How demand intensity is calculated |
-| `demand_level()` | Above 3 = Very high, 1.1-3 = High, 0.8-1.1 = Moderate, below 0.8 = Low | Shows demand in plain categories |
-| `deploy_taxis()` | Send each spare taxi to the stop with the largest seat shortfall | Turning demand into a deployment decision |
-
-### Key Model Parameters and Assumptions
-- **Standard taxi capacity**: 15 passenger seats per minibus taxi
-- **Average stop dwell time**: 1.5 minutes per intermediate stop ahead on the route
-- **Verification threshold**: At least 3 reports required before a stop confidence score can exceed 0.5
-- **Spare fleet pool**: 20 standby taxis available for deployment across the 6 pilot routes
-- **Demand forecasting**: Exponential smoothing applied to hourly passenger arrival counts rather than fixed manufacturing master production schedules (MPS)
-
-### Testing (test_supply_chain_model.py)
-- Unit tests check each formula against hand calculations (for example, 5 km at 30 km/h + 2 stops = 13 min)
-- Invalid inputs (such as zero speed) raise a `ValueError`
-
-### Current Prototype Limitations (Step 1 and Step 2 Scope)
-- **Static frontend state**: Because Step 1 uses pure HTML and CSS without JavaScript or a backend database, submitting the "Report a stop" form or "Report a problem" pop-up validates inputs on the screen but does not save new rows to the tables yet.
-- **Offline-first execution**: All styles and assets load locally from the `static/` directory so the interface can be tested directly in a browser without running a web server.
-
-### Planned for the Final Project (November Exam Submission)
-- Flask API and MySQL database (stops, routes, reports, and GPS pings)
-- Live data replacing the static demo values on the pages
-- Problem reports saved to the database so the problems table updates for all users
-- Opt-in driver GPS sharing and association logins
-
----
-
-## Folder Structure
-```
-BFB321_Group_05_Semester-Project/
-|-- index.html                   # start page: opens the welcome page
-|-- README.md
-|-- requirements.txt
-|-- .gitignore
-|-- supply_chain_model.py        # standalone model
-|-- test_supply_chain_model.py   # unit tests
-|-- run_eyabantu_demo.py         # runs the model on demo data
-|-- templates/
-|   |-- index.html               # welcome page
-|   |-- stops.html               # commuter: live stops, problems table, pop-up
-|   |-- demand.html              # drivers/associations: heat map
-|   `-- report.html              # report form
-`-- static/
-    |-- style.css                # shared styles
-    `-- taxis.jpg                # welcome page photo
+201 Created
+{"stop_id": 8}
 ```
 
-## References and Data Sources
-- **South African National Taxi Council (SANTACO) and Department of Transport**: National minibus taxi ridership statistics (65-75% public transport modal share, 15 million daily commuter trips, fleet estimates of 200 000 to 283 000 vehicles, and annual revenue estimates of R90 billion).
-- **Existing Transit Mapping Initiatives**: Route and informal stop mapping concepts adapted from TeksiMap and WhereIsMyTransport for the City of Tshwane pilot corridors.
-- **BFB 321 Group 05 Project Proposal (2026)**: Baseline problem definition, Pretoria CBD corridor selection, and supply chain KPI formulation.
+```json
+POST /api/demand-reports
+{"stop_id": 1, "waiting_passengers": 40}
+
+201 Created
+{"report_id": 12}
+```
+
+```json
+POST /api/taxi-positions
+{"stop_id": 3, "seats_available": 10}
+
+201 Created
+{"position_id": 4}
+```
+
+```json
+PATCH /api/problems/1
+{"status": "resolved"}
+
+200 OK
+{"ok": true}
+```
+
+```json
+GET /api/stops?route_id=1&page=1&size=3
+
+200 OK
+{"page": 1, "size": 3, "items": [ ... ]}
+```
+
+### Error responses
+Errors return JSON in the form `{"error": "message"}`.
+
+| Status | When |
+|--------|------|
+| 400 Bad Request | Missing or invalid fields (for example `waiting_passengers` outside 0–1000, or `seats_available` outside 0–15) |
+| 404 Not Found | The stop, problem or taxi position does not exist |
+| 409 Conflict | Duplicate data (for example renaming a stop to a name already used on its route) |
+| 500 Internal Server Error | Unexpected error; the database change is rolled back and the error is written to `eyabantu.log` |
+
+## Schema
+Seven related tables. Primary keys, foreign keys, CHECK constraints, audit fields and indexes are in [schema.sql](schema.sql).
+
+![ERD](docs/erd.png)
+
+| Table | Purpose | Key relationships |
+|-------|---------|-------------------|
+| `users` | Commuters, drivers and taxi associations (`role`) | One user files many reports and taxi positions |
+| `routes` | The 6 pilot routes into Pretoria CBD | One route has many stops |
+| `stops` | Taxi stops with distance to CBD and coordinates | Belongs to a route; has many reports and positions |
+| `taxi_positions` | Driver check-ins (`is_active`, `seats_available`) | Many per stop; many per driver |
+| `demand_reports` | Waiting passengers at a stop | Many per stop |
+| `problem_reports` | Problems at ranks, `open` or `resolved` | Many per stop |
+| `verification_reports` | Crowdsourced stop confirmations and safety ratings | Many per stop |
+
+Indexes: `(stop_id, is_active)` on `taxi_positions`, `(stop_id, reported_at)` on `demand_reports`, `(stop_id, status)` on `problem_reports`.
+
+## Project structure
+```
+app.py                  App factory: config, logging, blueprints, error handlers
+models.py               All database queries (one function per operation, table names match the ERD)
+routes/pages.py         Page routes, form actions and login (pages blueprint)
+routes/api.py           REST API blueprint mounted at /api
+config.py               Development / testing / production settings, chosen by APP_ENV in .env
+db.py                   One MySQL connection per request, closed on teardown
+supply_chain_model.py   ETA, demand intensity and level, heat map, deployment, confidence, forecast, occupancy
+schema.sql              Drops and recreates the eyabantu database (tables, keys, constraints, indexes)
+seed.sql                Sample data for every table, including the demo accounts
+templates/              Jinja2 pages, all extending base.html (navigation and flash messages)
+static/                 style.css and images
+docs/erd.png            Entity relationship diagram (source: docs/erd.mmd)
+tests/                  pytest tests for supply_chain_model.py
+pytest.ini              Lets pytest find the project modules
+requirements.txt        Python packages
+.env.example            Template for .env (the real .env is in .gitignore)
+```
+
+## Configuration
+Settings are read from `.env` (see `.env.example`):
+
+| Variable | Purpose |
+|----------|---------|
+| `APP_ENV` | `development`, `testing` or `production` (production turns debug off) |
+| `SECRET_KEY` | Signs login sessions; use a long random string |
+| `DB_HOST`, `DB_PORT` | MySQL server (default `localhost`, `3306`) |
+| `DB_USER`, `DB_PASSWORD` | MySQL login |
+| `DB_NAME` | Database name (`eyabantu`) |
+
+## Backup, restore and rollback
+```bash
+mysqldump -u root -p eyabantu > backup.sql
+mysql -u root -p eyabantu -e "source backup.sql"
+```
+
+Rollback: restore the latest `backup.sql`. To reset from scratch, run `schema.sql` (it drops and recreates the database) and then `seed.sql`.
+
+## Testing
+```bash
+pytest
+```
+Runs the model tests in `tests/` (`pytest.ini` sets the import path). Use the end-to-end checklist above to test the pages and forms.
+
+## Notes
+- Demo passwords are stored as Werkzeug password hashes, never as plain text.
+- Logging goes to `eyabantu.log`.
+- Code is split into three layers: routes (`routes/`) handle requests, `models.py` talks to MySQL, and `supply_chain_model.py` does the calculations. Routes never contain SQL.
+- All supply chain calculations come from `supply_chain_model.py`, so the pages and the API always use the same rules.
+
+## Team (Group 05)
+
+Eyabantu Taxi Program. Group 05: Harley Dalmeida, Jaco Grobbelaar and Danie Smit.
+
+| Name | Student number | GitHub username |
+|------|----------------|-----------------|
+| Harley Dalmeida | u22717227 | [u22717227](https://github.com/u22717227) |
+| Jaco Grobbelaar | u23535173 | [jaco-06](https://github.com/jaco-06) |
+| Danie Smit | u23596717 | [u23596717-Danie-Smit](https://github.com/u23596717-Danie-Smit) |
+
+## Task allocation
+
+| Member | Work |
+|--------|------|
+| Harley Dalmeida | Flask app setup (`app.py`), role-based login, MySQL connection (`config.py`, `db.py`, `.env.example`), `schema.sql`, `seed.sql`, the database layer in `models.py`, and the REST API in `routes/api.py` |
+| Jaco Grobbelaar | Page templates (`base`, welcome, live stops, demand, report, login), shared CSS and navigation, the page routes in `routes/pages.py`, and the HTML forms for demand reports, problem reports, resolve, and taxi check-in and check-out |
+| Danie Smit | Supply chain calculations in `supply_chain_model.py` (ETA, demand intensity, heat map, deployment, confidence, forecast, occupancy), home-page KPIs, pytest tests, the ERD, and the README |
