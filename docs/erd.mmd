@@ -1,0 +1,73 @@
+erDiagram
+    users ||--o{ taxi_positions : "drives (driver_id)"
+    users ||--o{ demand_reports : "reports (reported_by)"
+    users ||--o{ problem_reports : "reports (reported_by)"
+    users ||--o{ verification_reports : "reports (reported_by)"
+    routes ||--o{ stops : "has"
+    stops ||--o{ taxi_positions : "has"
+    stops ||--o{ demand_reports : "has"
+    stops ||--o{ problem_reports : "has"
+    stops ||--o{ verification_reports : "has"
+
+    users {
+        INT user_id PK
+        VARCHAR full_name "NOT NULL"
+        VARCHAR email UK "NOT NULL"
+        VARCHAR password_hash "NOT NULL"
+        VARCHAR role "commuter/driver/association"
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    routes {
+        INT route_id PK
+        VARCHAR name UK "NOT NULL"
+        TEXT description
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    stops {
+        INT stop_id PK
+        VARCHAR name "UNIQUE with route_id"
+        INT route_id FK
+        DECIMAL latitude
+        DECIMAL longitude
+        DECIMAL distance_to_cbd_km
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+    }
+    taxi_positions {
+        INT position_id PK
+        INT stop_id FK "IDX with is_active"
+        INT driver_id FK
+        DECIMAL latitude
+        DECIMAL longitude
+        INT seats_available
+        TIMESTAMP reported_at
+        BOOLEAN is_active
+        TIMESTAMP updated_at
+    }
+    demand_reports {
+        INT report_id PK
+        INT stop_id FK "IDX with reported_at"
+        INT waiting_passengers "CHECK >= 0"
+        INT reported_by FK
+        TIMESTAMP reported_at
+    }
+    problem_reports {
+        INT problem_id PK
+        INT stop_id FK "IDX with status"
+        VARCHAR problem_type "NOT NULL"
+        TEXT description
+        INT reported_by FK
+        TIMESTAMP reported_at
+        VARCHAR status "open/resolved"
+        TIMESTAMP updated_at
+    }
+    verification_reports {
+        INT verification_id PK
+        INT stop_id FK
+        VARCHAR report_type "stop_confirm/safe_pickup/safety_rating"
+        INT safety_rating "CHECK 1-5"
+        INT reported_by FK
+        TIMESTAMP reported_at
+    }
